@@ -6,13 +6,18 @@ set -euo pipefail
 
 MODEL="${BOT_MODEL:-llama3.2:3b}"   # pick something your Pi can run: ollama list
 HOST="${BOT_OLLAMA_URL:-http://127.0.0.1:11434}"
-PROMPT="${*:-$(cat)}"
-PROMPT="${PROMPT#@bot}"              # strip trigger word if Shortcut forwards it
+LOG="${BOT_LOG:-$HOME/bot.log}"
+RAW="${*:-$(cat)}"
+OUT=""
+# log every call (incl. /status, empty input, crashes): time | secs | exit code | raw input -> output
+trap 'rc=$?; printf "%s | %ss | rc=%s | %s -> %s\n" "$(date -Is)" "$SECONDS" "$rc" "$(tr "\n" " " <<<"$RAW")" "$(tr "\n" " " <<<"$OUT")" >> "$LOG"' EXIT
+PROMPT="${RAW#@bot}"                 # strip trigger word if Shortcut forwards it
 PROMPT="${PROMPT#"${PROMPT%%[![:space:]]*}"}"   # trim leading whitespace
 
-[ -n "$PROMPT" ] || { echo "empty prompt"; exit 1; }
+[ -n "$PROMPT" ] || { OUT="empty prompt"; echo "$OUT"; exit 1; }
 
 if [ "$PROMPT" = "/status" ]; then
+  OUT="(status)"
   echo "up: $(uptime -p | sed 's/^up //') | load: $(cut -d' ' -f1-3 /proc/loadavg)"
   free -m | awk '/Mem:/{printf "ram: %d/%d MB used\n",$3,$2}'
   df -h / | awk 'NR==2{print "disk /: "$5" used, "$4" free"}'
@@ -29,6 +34,7 @@ REPLY=$(jq -n --arg m "$MODEL" --arg p "$PROMPT" \
     messages:[{role:"system",content:"You are a witty, sarcastic chat bot. Answer correctly but with a joke, pun or playful roast. Max 2 short sentences, plain text, no markdown."},
               {role:"user",content:$p}]}' |
   curl -s --max-time 120 "$HOST/api/chat" -d @- |
-  jq -r '.message.content // ("bot error: " + (.error // "no reply from ollama"))')
-printf '%s | %ss | %s -> %s\n' "$(date -Is)" "$SECONDS" "$PROMPT" "$REPLY" >> "${BOT_LOG:-$HOME/bot.log}"
+  jq -r '.message.content // ("bot error: " + (.error // "no reply from ollama"))') || true
+[ -n "$REPLY" ] || REPLY="bot error: ollama unreachable or timed out"
+OUT="$REPLY"
 echo "$REPLY"
