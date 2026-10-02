@@ -20,13 +20,13 @@ Do this before `ollama pull`. Models are GBs; Ollama stores them in `OLLAMA_MODE
 
 ```sh
 lsblk -f                                   # find the drive, e.g. /dev/sda1
-sudo mkdir -p /mnt/data
-echo 'UUID=<uuid-from-lsblk> /mnt/data ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab
+sudo mkdir -p /mnt/storage
+echo 'UUID=<uuid-from-lsblk> /mnt/storage ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab
 sudo mount -a                              # use ntfs-3g/exfat in fstab if not ext4 (ext4 recommended: ownership needed)
-sudo mkdir -p /mnt/data/ollama && sudo chown ollama:ollama /mnt/data/ollama
+sudo mkdir -p /mnt/storage/ollama && sudo chown ollama:ollama /mnt/storage/ollama
 sudo systemctl edit ollama                 # add the 2 lines below, save
 #   [Service]
-#   Environment="OLLAMA_MODELS=/mnt/data/ollama"
+#   Environment="OLLAMA_MODELS=/mnt/storage/ollama"
 sudo systemctl daemon-reload && sudo systemctl restart ollama
 ```
 
@@ -40,7 +40,7 @@ sha256sum $B/sha256-$H            # must equal $H
 sudo chown -R ollama:ollama /mnt/storage/ollama && ollama pull <model>
 ```
 
-`nofail` keeps the Pi booting if the drive is unplugged. If you already pulled models, `sudo mv /usr/share/ollama/.ollama/models/* /mnt/data/ollama/` before restarting.
+`nofail` keeps the Pi booting if the drive is unplugged. If you already pulled models, `sudo mv /usr/share/ollama/.ollama/models/* /mnt/storage/ollama/` before restarting.
 
 Enable SSH on the Pi (`sudo systemctl enable --now ssh`). Note its Tailscale name (`tailscale status`), e.g. `raspberrypi`.
 
