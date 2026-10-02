@@ -7,11 +7,29 @@ iPhone/Mac Shortcut -> SSH over Tailscale -> `bot.sh` on Raspberry Pi -> local O
 ```sh
 curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull llama3.2:3b            # or any model; set BOT_MODEL to change
+ollama pull llama3.2:3b            # or any model; set BOT_MODEL to change. Small SD card? Do the drive section below FIRST.
 git clone https://github.com/Ovilli/AppleMessagesBot.git ~/AppleMessagesBot
 chmod +x ~/AppleMessagesBot/bot.sh
 ~/AppleMessagesBot/bot.sh "say hi"   # test locally
 ```
+
+### Models on external drive (small SD card)
+
+Do this before `ollama pull`. Models are GBs; Ollama stores them in `OLLAMA_MODELS`.
+
+```sh
+lsblk -f                                   # find the drive, e.g. /dev/sda1
+sudo mkdir -p /mnt/data
+echo 'UUID=<uuid-from-lsblk> /mnt/data ext4 defaults,nofail 0 2' | sudo tee -a /etc/fstab
+sudo mount -a                              # use ntfs-3g/exfat in fstab if not ext4 (ext4 recommended: ownership needed)
+sudo mkdir -p /mnt/data/ollama && sudo chown ollama:ollama /mnt/data/ollama
+sudo systemctl edit ollama                 # add the 2 lines below, save
+#   [Service]
+#   Environment="OLLAMA_MODELS=/mnt/data/ollama"
+sudo systemctl daemon-reload && sudo systemctl restart ollama
+```
+
+`nofail` keeps the Pi booting if the drive is unplugged. If you already pulled models, `sudo mv /usr/share/ollama/.ollama/models/* /mnt/data/ollama/` before restarting.
 
 Enable SSH on the Pi (`sudo systemctl enable --now ssh`). Note its Tailscale name (`tailscale status`), e.g. `raspberrypi`.
 
