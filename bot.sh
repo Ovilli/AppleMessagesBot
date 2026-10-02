@@ -17,5 +17,5 @@ jq -n --arg m "$MODEL" --arg p "$PROMPT" \
   '{model:$m, stream:false, keep_alive:"30m",
     messages:[{role:"system",content:"Reply briefly in plain text, no markdown."},
               {role:"user",content:$p}]}' |
-  curl -sf --max-time 300 "$HOST/api/chat" -d @- |
-  jq -r '.message.content'
+  curl -s --max-time 300 "$HOST/api/chat" -d @- |
+  jq -r '.message.content // ("bot error: " + (.error // "no reply from ollama"))'
