@@ -6,6 +6,7 @@ iPhone/Mac Shortcut -> SSH over Tailscale -> `bot.sh` on Raspberry Pi -> local O
 
 ```sh
 curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up
+sudo apt install -y jq curl
 curl -fsSL https://ollama.com/install.sh | sh
 ollama pull llama3.2:3b            # or any model; set BOT_MODEL to change. Small SD card? Do the drive section below FIRST.
 git clone https://github.com/Ovilli/AppleMessagesBot.git ~/AppleMessagesBot
@@ -27,6 +28,16 @@ sudo systemctl edit ollama                 # add the 2 lines below, save
 #   [Service]
 #   Environment="OLLAMA_MODELS=/mnt/data/ollama"
 sudo systemctl daemon-reload && sudo systemctl restart ollama
+```
+
+If `ollama pull` ends with `digest mismatch` (seen on USB drives), download the big blob once with curl and retry:
+
+```sh
+# H = sha256 shown in the error as "want sha256:<H>"
+B=/mnt/storage/ollama/blobs; sudo mkdir -p $B
+sudo curl -sL -o $B/sha256-$H https://registry.ollama.ai/v2/library/<model>/blobs/sha256:$H
+sha256sum $B/sha256-$H            # must equal $H
+sudo chown -R ollama:ollama /mnt/storage/ollama && ollama pull <model>
 ```
 
 `nofail` keeps the Pi booting if the drive is unplugged. If you already pulled models, `sudo mv /usr/share/ollama/.ollama/models/* /mnt/data/ollama/` before restarting.
