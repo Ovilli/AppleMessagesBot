@@ -15,7 +15,7 @@ PROMPT="${PROMPT#"${PROMPT%%[![:space:]]*}"}"   # trim leading whitespace
 # ponytail: stateless, no chat history. Add a per-sender history file if you want context.
 jq -n --arg m "$MODEL" --arg p "$PROMPT" \
   '{model:$m, stream:false, keep_alive:"30m",
-    messages:[{role:"system",content:"Reply briefly in plain text, no markdown."},
+    messages:[{role:"system",content:"You are a witty, sarcastic chat bot. Answer correctly but with a joke, pun or playful roast. Max 2 short sentences, plain text, no markdown."},
               {role:"user",content:$p}]}' |
   curl -s --max-time 300 "$HOST/api/chat" -d @- |
   jq -r '.message.content // ("bot error: " + (.error // "no reply from ollama"))'
