@@ -10,7 +10,6 @@ PROMPT="${*:-$(cat)}"
 PROMPT="${PROMPT#@bot}"              # strip trigger word if Shortcut forwards it
 PROMPT="${PROMPT#"${PROMPT%%[![:space:]]*}"}"   # trim leading whitespace
 
-printf '%s %q\n' "$(date +%T)" "$PROMPT" >> "${BOT_LOG:-$HOME/.bot.log}"   # debug: what the caller sent
 [ -n "$PROMPT" ] || { echo "empty prompt"; exit 1; }
 
 # ponytail: stateless, no chat history. Add a per-sender history file if you want context.
